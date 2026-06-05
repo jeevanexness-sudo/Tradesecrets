@@ -240,10 +240,9 @@ body { background: transparent; width: 1920px; height: 1080px; overflow: hidden;
 
 <script>
 // ── CONFIG ── Paste your Pipedream URL here after setup
-// JSONBin Config
-const BIN_ID  = '6a22bc34f5f4af5e29bd93f6';
-const API_KEY = '$2a$10$QbynTV6y5XMtmIU3k8GR0evYPFbpwrTPKsOqQEdoxj3KBc7koTiC2';
-const MT5_DATA_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest';
+// Cloudflare Worker — no CORS issues!
+const MT5_DATA_URL = 'https://polished-meadow-7990.jeevan-exness.workers.dev/';
+const MT5_HEADERS = {};
 
 function set(id,val){ const e=document.getElementById(id); if(e) e.textContent=val; }
 function cls(id,c){ const e=document.getElementById(id); if(e) e.className=c; }
@@ -253,13 +252,9 @@ function fmt(n,dec=2){ return Number(n).toLocaleString('en-US',{minimumFractionD
 // ── MT5 PERFORMANCE DATA ──
 async function fetchMT5Data(){
   try{
-    const r = await fetch(MT5_DATA_URL, {
-      headers: {
-        'X-Master-Key': API_KEY,
-        'X-Bin-Meta': 'false'
-      }
-    });
-    const d = await r.json();
+    const r = await fetch(MT5_DATA_URL + '?t=' + Date.now());
+    const raw = await r.json();
+    const d = raw.record || raw;
     if(!d||!d.balance) return;
 
     const bal = parseFloat(d.balance||0);
