@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trade Secrets Telugu — OBS Overlay</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: transparent; width: 1920px; height: 1080px; overflow: hidden; position: relative; font-family: 'Rajdhani', sans-serif; }
+
+@keyframes scanline { 0%{top:-5%} 100%{top:105%} }
+.scanline { position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,rgba(0,255,80,0.15),transparent); animation:scanline 6s linear infinite; pointer-events:none; z-index:100; }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* TOP BAR */
+#topbar { position:absolute; top:0; left:0; right:0; height:52px; background:linear-gradient(90deg,rgba(0,8,0,0.97),rgba(5,20,0,0.95),rgba(0,8,0,0.97)); border-bottom:1px solid #aaff00; display:flex; align-items:center; padding:0 20px; gap:16px; box-shadow:0 0 20px rgba(0,255,0,0.15); }
+.top-badge { background:linear-gradient(135deg,#aaff00,#66cc00); color:#000; font-family:'Orbitron',sans-serif; font-size:10px; font-weight:900; padding:4px 12px; clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%); letter-spacing:0.1em; }
+.ch-name { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:900; color:#fff; letter-spacing:0.05em; }
+.ch-name span { color:#aaff00; }
+.live-dot { display:flex; align-items:center; gap:5px; background:rgba(200,0,0,0.2); border:1px solid #c00; padding:2px 10px; border-radius:2px; font-size:10px; font-weight:700; color:#ff4444; letter-spacing:0.1em; }
+.live-dot::before { content:''; width:7px; height:7px; background:#ff0000; border-radius:50%; animation:blink 1s infinite; }
+.top-right { margin-left:auto; display:flex; align-items:center; gap:14px; font-size:11px; color:#66aa00; font-family:'Orbitron',sans-serif; letter-spacing:0.06em; }
+.top-right span { color:#aaff00; }
+
+/* CHART FRAME */
+#chart-frame { position:absolute; top:52px; left:0; right:320px; bottom:42px; border:1px solid rgba(100,180,0,0.25); pointer-events:none; }
+#chart-frame::before { content:''; position:absolute; top:-1px; left:-1px; width:60px; height:60px; border-top:2px solid #aaff00; border-left:2px solid #aaff00; }
+#chart-frame::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:60px; height:60px; border-bottom:2px solid #aaff00; border-right:2px solid #aaff00; }
+
+/* RIGHT PANEL */
+#right-panel { position:absolute; top:52px; right:0; bottom:42px; width:320px; background:linear-gradient(180deg,rgba(0,8,0,0.96),rgba(2,12,0,0.98)); border-left:1px solid #aaff00; display:flex; flex-direction:column; overflow:hidden; }
+.rp-header { background:linear-gradient(90deg,rgba(0,255,0,0.1),transparent); border-bottom:1px solid rgba(100,200,0,0.3); padding:8px 14px; display:flex; align-items:center; gap:8px; }
+.rp-title { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:#aaff00; letter-spacing:0.08em; }
+.rp-dot { width:6px; height:6px; background:#aaff00; border-radius:50%; box-shadow:0 0 8px #aaff00; animation:blink 1.5s infinite; margin-left:auto; }
+
+/* BOT PERFORMANCE */
+.perf-section { padding:10px 14px; border-bottom:1px solid rgba(100,180,0,0.2); }
+.perf-label { font-family:'Orbitron',sans-serif; font-size:9px; color:#aaff00; letter-spacing:0.1em; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.perf-label::before { content:'📊'; font-size:11px; }
+.perf-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.perf-card { background:rgba(0,0,0,0.5); border:1px solid rgba(100,180,0,0.2); border-radius:3px; padding:6px 8px; }
+.perf-card.highlight { border-color:rgba(170,255,0,0.5); background:rgba(0,30,0,0.6); }
+.pc-label { font-size:8px; color:#446600; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:2px; }
+.pc-value { font-family:'Orbitron',sans-serif; font-size:15px; font-weight:700; color:#e8f5e8; font-variant-numeric:tabular-nums; line-height:1; }
+.pc-value.green { color:#aaff00; text-shadow:0 0 8px rgba(170,255,0,0.4); }
+.pc-value.red { color:#ff4444; }
+.pc-value.large { font-size:13px; }
+.pc-sub { font-size:8px; color:#446600; margin-top:2px; }
+
+/* running profit bar */
+.profit-bar-wrap { margin-top:6px; }
+.profit-bar-bg { background:rgba(0,0,0,0.5); border:1px solid rgba(100,180,0,0.2); border-radius:2px; height:6px; overflow:hidden; }
+.profit-bar-fill { height:100%; background:linear-gradient(90deg,#224400,#aaff00); border-radius:2px; transition:width 1s ease; }
+.profit-bar-label { display:flex; justify-content:space-between; font-size:8px; color:#446600; margin-top:3px; }
+
+/* Signal */
+.signal-section { padding:8px 14px; border-bottom:1px solid rgba(100,180,0,0.2); }
+.sig-title { font-family:'Orbitron',sans-serif; font-size:9px; color:#aaff00; letter-spacing:0.1em; margin-bottom:5px; display:flex; align-items:center; gap:6px; }
+.dir-badge { display:inline-block; padding:1px 10px; border-radius:2px; font-family:'Orbitron',sans-serif; font-size:9px; font-weight:700; letter-spacing:0.1em; }
+.dir-badge.buy { background:rgba(0,255,80,0.15); border:1px solid #00cc44; color:#00ff55; }
+.dir-badge.sell { background:rgba(255,50,50,0.15); border:1px solid #cc2200; color:#ff4422; }
+.sig-row { display:flex; justify-content:space-between; font-size:10px; padding:2px 0; }
+.sig-lbl { color:#445500; }
+.sig-val { font-family:'Orbitron',sans-serif; font-size:9px; font-weight:600; font-variant-numeric:tabular-nums; }
+.entry-v{color:#aaff00;} .sl-v{color:#ff4444;} .tp-v{color:#44ff88;}
+
+/* Bot Ad */
+.bot-ad { padding:8px 14px; border-bottom:1px solid rgba(100,180,0,0.2); }
+.bot-name { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:900; color:#aaff00; letter-spacing:0.08em; margin-bottom:3px; }
+.bot-tag { font-size:9px; color:#88bb00; margin-bottom:5px; }
+.bot-feats { display:flex; flex-direction:column; gap:2px; margin-bottom:6px; }
+.bot-feat { font-size:8px; color:#99cc44; display:flex; align-items:center; gap:5px; }
+.bot-feat::before { content:'▸'; color:#aaff00; }
+.bot-ret { background:rgba(0,0,0,0.5); border:1px solid rgba(170,255,0,0.4); border-radius:3px; padding:4px 8px; display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.ret-val { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:900; color:#aaff00; text-shadow:0 0 10px rgba(170,255,0,0.5); }
+.ret-lbl { font-size:8px; color:#446600; }
+.tg-btn { display:flex; align-items:center; gap:8px; background:rgba(0,100,180,0.2); border:1px solid rgba(34,158,217,0.5); border-radius:3px; padding:5px 10px; text-decoration:none; cursor:pointer; transition:all 0.2s; }
+.tg-btn:hover { background:rgba(0,100,180,0.4); }
+.tg-name { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:#229ED9; }
+.tg-sub2 { font-size:8px; color:#446688; }
+
+/* Clock */
+#clock-wrap { padding:8px 14px; margin-top:auto; border-top:1px solid rgba(100,180,0,0.2); }
+#clock { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; color:#aaff00; font-variant-numeric:tabular-nums; text-shadow:0 0 10px rgba(170,255,0,0.3); }
+#clock-date { font-size:9px; color:#446600; margin-top:1px; }
+.sessions { display:flex; gap:4px; margin-top:4px; }
+.sess { font-family:'Orbitron',sans-serif; font-size:7px; padding:1px 5px; border-radius:2px; font-weight:700; letter-spacing:0.05em; }
+.sess.active { background:rgba(0,255,80,0.15); border:1px solid #00aa44; color:#aaff00; }
+.sess.inactive { background:rgba(0,0,0,0.3); border:1px solid #1a2a0a; color:#2a3a1a; }
+
+/* TICKER */
+#ticker { position:absolute; bottom:0; left:0; right:0; height:42px; background:linear-gradient(90deg,rgba(0,8,0,0.97),rgba(5,20,0,0.97)); border-top:1px solid #aaff00; display:flex; align-items:center; overflow:hidden; }
+.ticker-badge { background:linear-gradient(135deg,#aaff00,#66cc00); color:#000; font-family:'Orbitron',sans-serif; font-size:8px; font-weight:900; padding:0 24px 0 14px; height:100%; display:flex; align-items:center; letter-spacing:0.1em; flex-shrink:0; clip-path:polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%); }
+.ticker-track { display:flex; gap:40px; align-items:center; animation:scroll 35s linear infinite; white-space:nowrap; padding-left:20px; }
+.t-item { display:flex; align-items:center; gap:6px; }
+.t-sym { font-family:'Orbitron',sans-serif; font-size:9px; font-weight:700; color:#66aa00; letter-spacing:0.06em; }
+.t-price { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:600; color:#ccee88; font-variant-numeric:tabular-nums; }
+.t-chg { font-size:9px; font-weight:700; }
+.t-sep { color:rgba(100,150,0,0.4); font-size:8px; }
+.up{color:#aaff00;} .dn{color:#ff4444;}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+#status-bar { position:absolute; bottom:50px; left:10px; font-family:'Orbitron',sans-serif; font-size:8px; color:rgba(100,150,0,0.3); }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+
+<!-- TOP -->
+<div id="topbar">
+  <div class="top-badge">TST</div>
+  <div class="ch-name">Trade Secrets <span>Telugu</span></div>
+  <div class="live-dot">LIVE</div>
+  <div class="top-right"><span id="sessionLabel">London Session</span> &nbsp;·&nbsp; Forex & Gold &nbsp;·&nbsp; <span>@QuantEdze</span></div>
+</div>
+
+<!-- CHART FRAME -->
+<div id="chart-frame"></div>
+<div id="status-bar" id="connStatus">● Connecting to MT5...</div>
+
+<!-- RIGHT PANEL -->
+<div id="right-panel">
+  <div class="rp-header">
+    <div class="rp-title">🤖 PROFIT PILOT — LIVE</div>
+    <div class="rp-dot"></div>
+  </div>
+
+  <!-- BOT PERFORMANCE -->
+  <div class="perf-section">
+    <div class="perf-label">BOT PERFORMANCE</div>
+    <div class="perf-grid">
+      <div class="perf-card highlight">
+        <div class="pc-label">Balance</div>
+        <div class="pc-value large green" id="perfBalance">—</div>
+        <div class="pc-sub" id="perfCurrency">USD</div>
+      </div>
+      <div class="perf-card highlight">
+        <div class="pc-label">Equity</div>
+        <div class="pc-value large" id="perfEquity">—</div>
+        <div class="pc-sub">Live value</div>
+      </div>
+      <div class="perf-card">
+        <div class="pc-label">Running P&L</div>
+        <div class="pc-value" id="perfProfit">—</div>
+        <div class="pc-sub" id="perfProfitPct">—%</div>
+      </div>
+      <div class="perf-card">
+        <div class="pc-label">Free Margin</div>
+        <div class="pc-value large" id="perfMargin">—</div>
+        <div class="pc-sub">Available</div>
+      </div>
+    </div>
+    <div class="profit-bar-wrap">
+      <div class="profit-bar-label"><span>P&L Progress</span><span id="barPct">0%</span></div>
+      <div class="profit-bar-bg"><div class="profit-bar-fill" id="profitBar" style="width:0%"></div></div>
+    </div>
+    <div style="font-size:8px;color:#2a3a1a;margin-top:4px;" id="lastUpdate">● Waiting for MT5 data...</div>
+  </div>
+
+  <!-- SIGNAL -->
+  <div class="signal-section">
+    <div class="sig-title">⚡ XAUUSD SIGNAL <span class="dir-badge buy" id="sigDir">BUY</span></div>
+    <div class="sig-row"><span class="sig-lbl">Entry</span><span class="sig-val entry-v" id="sigEntry">—</span></div>
+    <div class="sig-row"><span class="sig-lbl">Stop Loss</span><span class="sig-val sl-v" id="sigSL">—</span></div>
+    <div class="sig-row"><span class="sig-lbl">TP 1</span><span class="sig-val tp-v" id="sigTP1">—</span></div>
+    <div class="sig-row"><span class="sig-lbl">TP 2</span><span class="sig-val tp-v" id="sigTP2">—</span></div>
+  </div>
+
+  <!-- BOT AD -->
+  <div class="bot-ad">
+    <div class="bot-name">🤖 PROFIT PILOT EA</div>
+    <div class="bot-tag">Set It. Forget It. Let the Bot Trade.</div>
+    <div class="bot-feats">
+      <div class="bot-feat">100% Automated — Zero Manual Work</div>
+      <div class="bot-feat">Runs 24/7 · Smart Auto TP & SL</div>
+      <div class="bot-feat">Consistent Profit Every Month</div>
+    </div>
+    <div class="bot-ret">
+      <div><div class="ret-lbl">Daily Returns</div><div class="ret-lbl">guaranteed</div></div>
+      <div class="ret-val">3–5%</div>
+    </div>
+    <a href="https://t.me/QuantEdze" target="_blank" style="text-decoration:none;display:block;">
+      <div class="tg-btn">
+        <span style="font-size:18px;">✈️</span>
+        <div><div class="tg-name">@QuantEdze</div><div class="tg-sub2">👆 Get Profit Pilot · Join Telegram</div></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- CLOCK -->
+  <div id="clock-wrap">
+    <div id="clock">--:--:--</div>
+    <div id="clock-date">-- --- ----</div>
+    <div class="sessions">
+      <div class="sess inactive" id="sess-sydney">SYDNEY</div>
+      <div class="sess inactive" id="sess-tokyo">TOKYO</div>
+      <div class="sess inactive" id="sess-london">LONDON</div>
+      <div class="sess inactive" id="sess-ny">NEW YORK</div>
+    </div>
+  </div>
+</div>
+
+<!-- TICKER -->
+<div id="ticker">
+  <div class="ticker-badge">TRADE SECRETS TELUGU</div>
+  <div class="ticker-track">
+    <div class="t-item"><span class="t-sym">XAUUSD</span><span class="t-price" id="tk-xau">—</span><span class="t-chg" id="tkc-xau"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">EURUSD</span><span class="t-price" id="tk-eur">—</span><span class="t-chg" id="tkc-eur"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">GBPUSD</span><span class="t-price" id="tk-gbp">—</span><span class="t-chg" id="tkc-gbp"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">USDJPY</span><span class="t-price" id="tk-jpy">—</span><span class="t-chg" id="tkc-jpy"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">GBPJPY</span><span class="t-price" id="tk-gbpjpy">—</span><span class="t-chg" id="tkc-gbpjpy"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">AUDUSD</span><span class="t-price" id="tk-aud">—</span><span class="t-chg" id="tkc-aud"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">BTCUSD</span><span class="t-price" id="tk-btc">—</span><span class="t-chg" id="tkc-btc"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">ETHUSD</span><span class="t-price" id="tk-eth">—</span><span class="t-chg" id="tkc-eth"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">XAUUSD</span><span class="t-price" id="tk2-xau">—</span><span class="t-chg" id="tkc2-xau"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">EURUSD</span><span class="t-price" id="tk2-eur">—</span><span class="t-chg" id="tkc2-eur"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">GBPUSD</span><span class="t-price" id="tk2-gbp">—</span><span class="t-chg" id="tkc2-gbp"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">USDJPY</span><span class="t-price" id="tk2-jpy">—</span><span class="t-chg" id="tkc2-jpy"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">GBPJPY</span><span class="t-price" id="tk2-gbpjpy">—</span><span class="t-chg" id="tkc2-gbpjpy"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">AUDUSD</span><span class="t-price" id="tk2-aud">—</span><span class="t-chg" id="tkc2-aud"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">BTCUSD</span><span class="t-price" id="tk2-btc">—</span><span class="t-chg" id="tkc2-btc"></span></div>
+    <div class="t-sep">◆</div>
+    <div class="t-item"><span class="t-sym">ETHUSD</span><span class="t-price" id="tk2-eth">—</span><span class="t-chg" id="tkc2-eth"></span></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ── Paste your Pipedream URL here after setup
+const MT5_DATA_URL = 'https://eolblbat9z6bdhp.m.pipedream.net';
+
+function set(id,val){ const e=document.getElementById(id); if(e) e.textContent=val; }
+function cls(id,c){ const e=document.getElementById(id); if(e) e.className=c; }
+
+function fmt(n,dec=2){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+
+// ── MT5 PERFORMANCE DATA ──
+async function fetchMT5Data(){
+  try{
+    const r = await fetch(MT5_DATA_URL+'?t='+Date.now());
+    const d = await r.json();
+    if(!d||!d.balance) return;
+
+    const bal = parseFloat(d.balance||0);
+    const eq  = parseFloat(d.equity||0);
+    const pnl = parseFloat(d.profit||0);
+    const pct = parseFloat(d.profitPct||0);
+    const fm  = parseFloat(d.freeMargin||0);
+    const cur = d.currency||'USD';
+
+    set('perfBalance', fmt(bal));
+    set('perfEquity',  fmt(eq));
+    set('perfCurrency', cur);
+    set('perfMargin',  fmt(fm));
+
+    const pnlStr = (pnl>=0?'+':'')+fmt(pnl);
+    set('perfProfit', pnlStr);
+    const el = document.getElementById('perfProfit');
+    if(el) el.className = 'pc-value '+(pnl>=0?'green':'red');
+
+    set('perfProfitPct', (pct>=0?'+':'')+pct.toFixed(2)+'%');
+
+    // Profit bar (cap at 10%)
+    const barW = Math.min(Math.max(pct/10*100, 0), 100);
+    const bar = document.getElementById('profitBar');
+    if(bar) bar.style.width = barW+'%';
+    set('barPct', (pct>=0?'+':'')+pct.toFixed(2)+'%');
+
+    set('lastUpdate', '● MT5 Live · '+new Date().toLocaleTimeString('en-IN',{hour12:false,timeZone:'Asia/Kolkata'}));
+    set('connStatus', '● MT5 Connected');
+  }catch(e){
+    set('lastUpdate', '● Reconnecting...');
+  }
+}
+
+// ── PRICE FUNCTIONS ──
+function updatePair(sid,tkid,price,pct,dec){
+  const f=dec===0?Number(price).toLocaleString('en-US',{maximumFractionDigits:0}):Number(price).toFixed(dec);
+  const dir=pct>=0?'up':'dn', arrow=pct>=0?'▲':'▼';
+  const chg=arrow+' '+Math.abs(pct).toFixed(2)+'%';
+  set('p-'+sid,f); set('c-'+sid,chg); cls('c-'+sid,'pr-chg '+dir);
+  set('tk-'+tkid,f); set('tkc-'+tkid,chg); cls('tkc-'+tkid,'t-chg '+dir);
+  set('tk2-'+tkid,f); set('tkc2-'+tkid,chg); cls('tkc2-'+tkid,'t-chg '+dir);
+}
+
+const TDKEY='172234c8c8e94a4b8760e10d46890c6c';
+async function fetchGold(){
+  try{
+    const r=await fetch('https://api.twelvedata.com/price?symbol=XAU%2FUSD%2CXAG%2FUSD&apikey='+TDKEY);
+    const d=await r.json();
+    const xp=parseFloat(d['XAU/USD']?.price||0);
+    if(xp>0){
+      updatePair('xau','xau',xp,0,2);
+      set('sigEntry',xp.toFixed(2)); set('sigSL',(xp-20).toFixed(2));
+      set('sigTP1',(xp+25).toFixed(2)); set('sigTP2',(xp+55).toFixed(2));
+    }
+    if(xp>0) return;
+  }catch(e){}
+  try{
+    const r=await fetch('https://gold-api.com/price/XAU'); const d=await r.json();
+    if(d&&d.price){ const p=parseFloat(d.price); updatePair('xau','xau',p,d.chp||0,2); set('sigEntry',p.toFixed(2)); set('sigSL',(p-20).toFixed(2)); set('sigTP1',(p+25).toFixed(2)); set('sigTP2',(p+55).toFixed(2)); }
+  }catch(e){}
+}
+
+const dayOpen={};
+function dpct(id,p){ if(!dayOpen[id]){dayOpen[id]=p;return 0;} return((p-dayOpen[id])/dayOpen[id])*100; }
+async function fetchForex(){
+  const urls=['https://open.er-api.com/v6/latest/USD','https://api.exchangerate-api.com/v4/latest/USD'];
+  for(const url of urls){
+    try{
+      const r=await fetch(url); const d=await r.json();
+      const rt=d.rates||d.conversion_rates; if(!rt) continue;
+      if(rt.EUR){const p=1/rt.EUR;updatePair('eur','eur',p,dpct('eur',p),5);}
+      if(rt.GBP){const p=1/rt.GBP;updatePair('gbp','gbp',p,dpct('gbp',p),5);}
+      if(rt.JPY){updatePair('jpy','jpy',rt.JPY,dpct('jpy',rt.JPY),3);}
+      if(rt.AUD){const p=1/rt.AUD;updatePair('aud','aud',p,dpct('aud',p),5);}
+      if(rt.GBP&&rt.JPY){const p=(1/rt.GBP)*rt.JPY;set('tk-gbpjpy',p.toFixed(3));set('tk2-gbpjpy',p.toFixed(3));}
+      break;
+    }catch(e){continue;}
+  }
+}
+async function fetchCrypto(){
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+    const d=await r.json();
+    if(d.bitcoin) updatePair('btc','btc',d.bitcoin.usd,d.bitcoin.usd_24h_change||0,0);
+    if(d.ethereum) updatePair('eth','eth',d.ethereum.usd,d.ethereum.usd_24h_change||0,2);
+  }catch(e){}
+}
+
+function updateClock(){
+  const now=new Date(), utcH=now.getUTCHours();
+  set('clock',now.toLocaleTimeString('en-IN',{hour12:false,timeZone:'Asia/Kolkata'}));
+  set('clock-date',now.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Kolkata'}));
+  const s={sydney:utcH>=21||utcH<6,tokyo:utcH>=0&&utcH<9,london:utcH>=7&&utcH<16,ny:utcH>=13&&utcH<22};
+  Object.entries(s).forEach(([k,a])=>{const e=document.getElementById('sess-'+k);if(e)e.className='sess '+(a?'active':'inactive');});
+  let lbl='Pre-Market';
+  if(s.ny&&s.london)lbl='London–NY Overlap 🔥';
+  else if(s.london)lbl='London Session';
+  else if(s.ny)lbl='New York Session';
+  else if(s.tokyo)lbl='Tokyo Session';
+  else if(s.sydney)lbl='Sydney Session';
+  set('sessionLabel',lbl);
+}
+
+updateClock(); setInterval(updateClock,1000);
+async function all(){ await Promise.all([fetchGold(),fetchForex(),fetchCrypto()]); }
+all(); setInterval(all,30000);
+fetchMT5Data(); setInterval(fetchMT5Data,5000);
+</script>
+</body>
+</html>
